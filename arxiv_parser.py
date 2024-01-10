@@ -11,7 +11,8 @@ PATTERN = r"Title:(.*?)Authors:(.*?)Categories:"
 PARSED_FILENAME = "arxiv_parsed.txt"
 
 
-ADDRESS_LIST = ["thomas_a_hahn@mac.com", "itammar.steinberg@weizmann.ac.il"]
+DISPATCH = True
+ADDRESS_LIST_FILE_PATH = 'address_book.txt'
 EMAIL_TITLE = "Parsed daily arxiv from Ilya"
 
 def extract_titles_and_authors(input_text):
@@ -26,6 +27,17 @@ def extract_titles_and_authors(input_text):
     papers_info = [(re.sub(r'\s+', ' ', title), re.sub(r'\s+', ' ', authors)) for title, authors in papers_info]
 
     return papers_info
+
+def mailing_list():
+    # Open the file in read mode
+    address_list = list()
+    with open(ADDRESS_LIST_FILE_PATH, 'r') as file:
+        # Read all lines from the file
+        lines = file.readlines()
+        # Print each line
+        for line in lines:
+            address_list.append(line.strip())
+    return address_list
 
 
 def mail_import():
@@ -65,7 +77,7 @@ def body_generator(mail_list):
         body += '\n'
         body += authors
         body += '\n'
-        body += '\n'
+        body += '.'
         body += '\n'
     return body
 
@@ -76,27 +88,33 @@ def write_data(body):
 
 def dispatch(email_body):
     outlook = win32com.client.Dispatch("Outlook.Application")
-    
-    if not email_body:
-        return
-
     # Create a new email
-    for address in ADDRESS_LIST:
-        new_mail = outlook.CreateItem(0)  # 0 represents the Outlook MailItem
 
-        # Replace the following details with your information
-        new_mail.Subject = EMAIL_TITLE
-        new_mail.Body = email_body
-        new_mail.To = address
+    address = ", ".join(mailing_list())
+        
+    new_mail = outlook.CreateItem(0)  # 0 represents the Outlook MailItem
 
-        # Send the email
-        new_mail.Send()
-        print(f"Email sent to {address}")
+    # Replace the following details with your information
+    new_mail.Subject = EMAIL_TITLE
+    new_mail.Body = email_body
+    new_mail.To = address
 
-def parse():
+    # Send the email
+    new_mail.Send()
+    print(f"Email sent to {address}")
+
+
+def main():
     mail_list = mail_import()
     body = body_generator(mail_list)
-    write_data(body)
-    dispatch(body)
 
-parse()
+    if not body:
+        # No mails today
+        return
+    
+    write_data(body)
+
+    if DISPATCH:
+        dispatch(body)
+
+main()
