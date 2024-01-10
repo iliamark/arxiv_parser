@@ -4,10 +4,15 @@ import re
 
 OUTLOOK_SUBFOLDER_NAME = "arxiv"
 OUTLOOK_FOLDER_NAME = "papers"
+
+
 # Regular expression pattern to extract titles and authors
 PATTERN = r"Title:(.*?)Authors:(.*?)Categories:" 
 PARSED_FILENAME = "arxiv_parsed.txt"
 
+
+ADDRESS_LIST = ["thomas_a_hahn@mac.com", "itammar.steinberg@weizmann.ac.il"]
+EMAIL_TITLE = "Parsed daily arxiv from Ilya"
 
 def extract_titles_and_authors(input_text):
     # Find all matches using re.findall
@@ -50,22 +55,48 @@ def mail_import():
         email_list.append(message.Body)
     return email_list
     
-def parse():
-    mail_list = mail_import()
+def body_generator(mail_list):
+    body = ""
     title_author_pairs = list()
     for mail in mail_list:
         title_author_pairs += extract_titles_and_authors(mail)
-    write_data(title_author_pairs)
-    
+    for title, authors in title_author_pairs:
+        body += title
+        body += '\n'
+        body += authors
+        body += '\n'
+        body += '\n'
+        body += '\n'
+    return body
 
-def write_data(title_author_pairs):
+def write_data(body):
     with open(PARSED_FILENAME, 'a') as f:
-        for title, authors in title_author_pairs:
-            f.write(title)
-            f.write('\n')
-            f.write(authors)
-            f.write('\n')
-            f.write('\n')
+        f.write(body)
     f.close()
+
+def dispatch(email_body):
+    outlook = win32com.client.Dispatch("Outlook.Application")
+    
+    if not email_body:
+        return
+
+    # Create a new email
+    for address in ADDRESS_LIST:
+        new_mail = outlook.CreateItem(0)  # 0 represents the Outlook MailItem
+
+        # Replace the following details with your information
+        new_mail.Subject = EMAIL_TITLE
+        new_mail.Body = email_body
+        new_mail.To = address
+
+        # Send the email
+        new_mail.Send()
+        print(f"Email sent to {address}")
+
+def parse():
+    mail_list = mail_import()
+    body = body_generator(mail_list)
+    write_data(body)
+    dispatch(body)
 
 parse()
