@@ -90,7 +90,7 @@ def dispatch(email_body):
     outlook = win32com.client.Dispatch("Outlook.Application")
     # Create a new email
 
-    address = ", ".join(mailing_list())
+    address = "; ".join(mailing_list())
         
     new_mail = outlook.CreateItem(0)  # 0 represents the Outlook MailItem
 
@@ -98,7 +98,6 @@ def dispatch(email_body):
     new_mail.Subject = EMAIL_TITLE
     new_mail.Body = email_body
     new_mail.To = address
-
     # Send the email
     new_mail.Send()
     print(f"Email sent to {address}")
